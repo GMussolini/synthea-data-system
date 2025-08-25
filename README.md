@@ -303,10 +303,6 @@ Start-Sleep -Seconds 30
 docker-compose ps
 ```
 
-## 📝 Licença
-
-MIT License
-
 ## 👥 Contribuindo
 
 1. Fork o projeto
