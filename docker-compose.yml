@@ -1,0 +1,140 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: patient-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: patient_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d patient_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - patient-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: patient-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - patient-network
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/patient_db
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here-change-in-production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      PYTHONPATH: /app
+      ENVIRONMENT: development
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./auth-service:/app
+    networks:
+      - patient-network
+    restart: unless-stopped
+
+  patient-service:
+    build:
+      context: ./patient-service
+      dockerfile: Dockerfile
+    container_name: patient-service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/patient_db
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:8000
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here-change-in-production}
+      ALGORITHM: HS256
+      PYTHONPATH: /app
+      ENVIRONMENT: development
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    volumes:
+      - ./patient-service:/app
+      - ./data:/app/data
+    networks:
+      - patient-network
+    restart: unless-stopped
+
+  search-service:
+    build:
+      context: ./search-service
+      dockerfile: Dockerfile
+    container_name: search-service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/patient_db
+      REDIS_URL: redis://redis:6379
+      AUTH_SERVICE_URL: http://auth-service:8000
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here-change-in-production}
+      ALGORITHM: HS256
+      PYTHONPATH: /app
+      ENVIRONMENT: development
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    volumes:
+      - ./search-service:/app
+    networks:
+      - patient-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: patient-gateway
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - patient-service
+      - search-service
+    networks:
+      - patient-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  patient-network:
+    driver: bridge

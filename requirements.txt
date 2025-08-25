@@ -1,0 +1,78 @@
+# auth-service/requirements.txt
+# Core dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic[email]
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# HTTP client
+httpx==0.26.0
+
+# Development
+python-dotenv==1.0.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+requests==2.31.0
+
+---
+
+# patient-service/requirements.txt
+# Core dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic[email]
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# HTTP client
+httpx==0.26.0
+
+# Data processing
+faker==22.2.0
+
+# Development
+python-dotenv==1.0.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+requests==2.31.0
+
+---
+
+# search-service/requirements.txt
+# Core dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic[email]
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+
+# HTTP client
+httpx==0.26.0
+
+# Development
+python-dotenv==1.0.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+requests==2.31.0
