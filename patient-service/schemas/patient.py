@@ -41,7 +41,21 @@ class InsuranceInfo(BaseModel):
     provider: str
     plan: str
     number: str
-    validity: Optional[date] = None
+    validity: Optional[str] = None  # Changed from date to str to avoid serialization issues
+    
+    @validator('validity')
+    def validate_validity(cls, v):
+        if v:
+            try:
+                # Try to parse the date to ensure it's valid
+                if isinstance(v, date):
+                    return v.isoformat()
+                # If it's a string, validate the format
+                datetime.strptime(v, '%Y-%m-%d')
+                return v
+            except ValueError:
+                raise ValueError('Validity must be in YYYY-MM-DD format')
+        return v
 
 class PatientBase(BaseModel):
     """Base patient schema"""
@@ -61,7 +75,11 @@ class PatientBase(BaseModel):
     @validator('phone')
     def validate_phone(cls, v):
         if v:
+            # Remove all non-numeric characters
             phone = re.sub(r'\D', '', v)
+            # Remove country code if present
+            if phone.startswith('55') and len(phone) > 11:
+                phone = phone[2:]
             if len(phone) < 10 or len(phone) > 11:
                 raise ValueError('Telefone inválido')
             return phone
@@ -99,6 +117,17 @@ class PatientUpdate(BaseModel):
     emergency_contact: Optional[EmergencyContact] = None
     insurance_info: Optional[InsuranceInfo] = None
     notes: Optional[str] = None
+    
+    @validator('phone')
+    def validate_phone(cls, v):
+        if v:
+            phone = re.sub(r'\D', '', v)
+            if phone.startswith('55') and len(phone) > 11:
+                phone = phone[2:]
+            if len(phone) < 10 or len(phone) > 11:
+                raise ValueError('Telefone inválido')
+            return phone
+        return v
 
 class PatientResponse(BaseModel):
     """Schema for patient response"""
